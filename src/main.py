@@ -25,12 +25,27 @@ def select_action(config, state, policy_net, steps_done):
     return action, steps_done
 
 
-def optimize_model(policy_net, memory, batch_size):
+def optimize_model(policy_net, target_net, optimizer, device, memory, batch_size, gamma):
     if len(memory) < batch_size:
         return
     transitions = memory.sample(batch_size)
-    state_batch = torch.cat([torch.unsqueeze(x['state'], 0) for x in transitions])
+    non_final_mask = [True if x['next_state'] is not None else False 
+        for x in transitions]
+    non_final_next_states = torch.cat([torch.unsqueeze(x['next_state'], 0) 
+        for x in transitions if x['next_state'] is not None])
+    states_batch = torch.cat([torch.unsqueeze(x['state'], 0) for x in transitions])
+    rewards_batch = torch.tensor([x['reward'] for x in transitions])
+    actions_batch = torch.tensor([x['action'] for x in transitions])
+    state_action_values = policy_net(states_batch).gather(1, actions_batch.view(-1,1))
+    next_state_values = torch.zeros(batch_size, device=device)
+    next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0].detach()
+    expected_state_action_values = (next_state_values * gamma) + rewards_batch
+    loss = F.mse_loss(state_action_values, expected_state_action_values)
 
+    # Optimize the model
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
 
 
 def main(device, writer, data_dir, model_dir, config_path):
@@ -41,7 +56,7 @@ def main(device, writer, data_dir, model_dir, config_path):
         n_samples = config['n_samples'],
         actions = config['actions'],
         fx_pair = config['fx_pair'],
-        spread = config['pip_size'][config['fx_pair']] * config['spread'],
+        pip_size = config['pip_size'][config['fx_pair']],
         data_dir = data_dir,
     )
     policy_net = fx_model.Agent(

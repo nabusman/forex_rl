@@ -10,7 +10,6 @@ target_update: 10
 aggregation: 1 min
 n_samples: 100
 fx_pair: EURUSD
-spread: 4
 tech_indicators:
   macd: [12,26]
   rsi: [14]

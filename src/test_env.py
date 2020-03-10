@@ -1,3 +1,4 @@
+import os
 import random
 
 import torch
@@ -9,14 +10,14 @@ n_samples = 100
 batch_size = 128
 aggregation = '1 minute'
 actions = ['long', 'neutral', 'short']
-fx_pair = 'EURUSD'
-spread = 0.0004
+fx_pair = 'AUDJPY'
+pip_size = 0.01
 data_dir = '/Data/foreign_exchange_data/'
 
 
 input_data = torch.randn([batch_size, n_features, n_samples])
 
-env = fx_env.ForexEnv(aggregation, n_samples, actions, fx_pair, spread, data_dir)
+env = fx_env.ForexEnv(aggregation, n_samples, actions, fx_pair, pip_size, data_dir)
 
 obs = env.reset()
 

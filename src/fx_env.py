@@ -66,7 +66,8 @@ class ForexEnv(gym.Env):
         self.start_index = None
         self.position = None
         self.dollars_per_pip = 1000 # Change this to allow more failures
-        self.account_balance = 100000
+        self.starting_balance = 100000
+        self.account_balance = self.account_balance
         self.max_balance = self.account_balance * 100
         self.max_steps = 1000
         self.obs, self.end_time = self._get_observation()
@@ -96,7 +97,10 @@ class ForexEnv(gym.Env):
             self.obs = None
         else:
             self.obs, self.end_time = self._get_observation()
-        return self.obs, reward, done, {'account_balance' : self.account_balance, 'steps' : self.steps}
+        info = {'account_balance' : self.account_balance, 
+            'starting_balance' : self.starting_balance, 
+            'steps' : self.steps}
+        return self.obs, reward, done, info
 
 
     def _get_observation(self):

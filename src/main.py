@@ -24,11 +24,7 @@ def select_action(config, state, policy_net, steps_done):
         action = random.choice(range(len(config['actions'])))
     return action, steps_done
 
-
-def optimize_model(policy_net, target_net, optimizer, device, memory, batch_size, gamma):
-    if len(memory) < batch_size:
-        return
-    transitions = memory.sample(batch_size)
+def calc_loss(policy_net, target_net, device, transitions, gamma):
     non_final_mask = [True if x['next_state'] is not None else False 
         for x in transitions]
     non_final_next_states = torch.cat([torch.unsqueeze(x['next_state'], 0) 
@@ -37,15 +33,31 @@ def optimize_model(policy_net, target_net, optimizer, device, memory, batch_size
     rewards_batch = torch.tensor([x['reward'] for x in transitions])
     actions_batch = torch.tensor([x['action'] for x in transitions])
     state_action_values = policy_net(states_batch).gather(1, actions_batch.view(-1,1))
-    next_state_values = torch.zeros(batch_size, device=device)
+    next_state_values = torch.zeros(len(transitions), device=device)
     next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0].detach()
     expected_state_action_values = (next_state_values * gamma) + rewards_batch
     loss = F.mse_loss(state_action_values, expected_state_action_values)
+    return loss
 
-    # Optimize the model
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
+
+def calc_metrics(transitions, info, risk_free_rate = 0.05):
+    rewards = np.array([x['reward'] for x in transitions if rewards is not None])
+    roi = (info['account_balance'] - info['starting_balance']) / info['starting_balance']
+    mean_reward = np.mean(rewards)
+    std = np.std(rewards)
+    median_reward = np.median(rewards)
+    sharpe = (roi - risk_free_rate) / np.std(rewards)
+    downside_deviation = np.sqrt(np.sum(rewards[np.argwhere(rewards < 0)] ** 2)) / len(rewards)
+    sortino = (roi - risk_free_rate) / downside_deviation
+    metrics = {
+        'sharpe' : sharpe, 
+        'sortino' : sortino, 
+        'mean' : mean_reward, 
+        'median' : median_reward,
+        'downside_deviation' : downside_deviation,
+        'standard_deviation' : std,
+    }
+    return metrics
 
 
 def main(device, writer, data_dir, model_dir, config_path):
@@ -78,6 +90,16 @@ def main(device, writer, data_dir, model_dir, config_path):
     optimizer = optim.AdamW(policy_net.parameters(), lr = config['learning_rate'])
     memory = fx_model.ReplayMemory(config['memory'])
     steps_done = 0
+
+    # Training Loop
+    # Pick action
+    # Get reward
+    # add to memory
+    # if memory is not big enough continue
+    # Calc loss
+    # optimizer step
+    # Sync with target if X trades have happened
+    # Calc metrics, if above a level quit training
 
 
 

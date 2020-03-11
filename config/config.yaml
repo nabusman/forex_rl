@@ -5,6 +5,9 @@ eps_start: 0.9
 eps_end: 0.05
 eps_decay: 200
 target_update: 10
+stopping_metric:
+  type: shape
+  level: 2.5
 
 # Environment parameters
 aggregation: 1 min

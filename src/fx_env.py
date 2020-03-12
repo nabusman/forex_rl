@@ -61,21 +61,18 @@ class ForexEnv(gym.Env):
 
 
     def reset(self):
-        self.steps = 0
         self.enter_price = None
         self.start_index = None
         self.position = None
-        self.dollars_per_pip = 1000 # Change this to allow more failures
+        self.dollars_per_pip = 100 # Change this to allow more failures
         self.starting_balance = 100000
-        self.account_balance = self.account_balance
+        self.account_balance = self.starting_balance
         self.max_balance = self.account_balance * 100
-        self.max_steps = 1000
         self.obs, self.end_time = self._get_observation()
         return self.obs
 
 
     def step(self, action):
-        self.steps += 1
         reward = 0
         self.position = self.actions[action]
         self.start_index = np.searchsorted(self.tick_data[:,0], self.end_time)
@@ -90,16 +87,13 @@ class ForexEnv(gym.Env):
             self.exit_price = self._calc_exit_price() * ((np.random.random() - 0.5) * self.max_slippage)
             reward = (self.enter_price - self.exit_price) / self.pip_size * self.dollars_per_pip
         self.account_balance += reward
-        done = True if self.account_balance < 0 \
-            or self.account_balance > self.max_balance \
-            or self.steps >= self.max_steps else False
+        done = True if self.account_balance < 0 or self.account_balance > self.max_balance else False
         if done:
             self.obs = None
         else:
             self.obs, self.end_time = self._get_observation()
         info = {'account_balance' : self.account_balance, 
-            'starting_balance' : self.starting_balance, 
-            'steps' : self.steps}
+            'starting_balance' : self.starting_balance}
         return self.obs, reward, done, info
 
 
@@ -131,21 +125,20 @@ class ForexEnv(gym.Env):
             min_price = self.enter_price
         else:
             raise Exception(f'Unknown self.position {self.position}')
+        stop_loss_amount = self.stop_loss * self.pip_size
         for i in range(self.start_index,self.tick_data.shape[0]):
             _, bid, ask = self.tick_data[i,:]
             if self.position == 'long':
-                stop_loss = (max_price - (self.stop_loss * self.pip_size))
+                stop_loss = max_price - stop_loss_amount
                 if max_price < bid:
                     max_price = bid
                     continue
                 elif bid <= stop_loss or i == (self.tick_data.shape[0] - 1):
-                    # print(f'Closing position: enter_price: {enter_price}, stop_loss {stop_loss}, exit price: {bid}, profit/loss: {(bid - enter_price) / pip_size} pips')
                     return bid
             elif self.position == 'short':
-                stop_loss = (min_price + (self.stop_loss * self.pip_size))
+                stop_loss = min_price + stop_loss_amount
                 if min_price > ask:
                     min_price = ask
                     continue
                 elif ask >= stop_loss or i == (self.tick_data.shape[0] - 1):
-                    # print(f'Closing position: enter_price: {enter_price}, stop_loss {stop_loss}, exit price: {ask}, profit/loss: {(enter_price - ask) / pip_size} pips')
                     return ask

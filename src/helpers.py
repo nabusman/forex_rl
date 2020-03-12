@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+import indicators
+
 def get_config(config_path):
 	with open(config_path) as f:
 		config = yaml.load(f, Loader = yaml.FullLoader)

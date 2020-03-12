@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 class ReplayMemory(object):
     """ReplayMemory for storing history"""
-    def __init__(self, capacity = 100000):
+    def __init__(self, capacity):
         super(ReplayMemory, self).__init__()
         self.capacity = capacity
         self.memory = deque()
@@ -21,6 +21,9 @@ class ReplayMemory(object):
 
     def sample(self, batch_size):
         return random.sample(self.memory, batch_size)
+
+    def get_history(self):
+        return self.memory
 
     def __len__(self):
         return len(self.memory)

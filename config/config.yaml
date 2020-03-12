@@ -1,13 +1,13 @@
 # RL parameters
-batch_size: 128
+batch_size: 64
 gamma: 0.999
 eps_start: 0.9
 eps_end: 0.05
 eps_decay: 200
-target_update: 10
+target_update: 100
 stopping_metric:
-  type: shape
-  level: 2.5
+  type: sharpe
+  level: 2.0
 
 # Environment parameters
 aggregation: 1 min
@@ -16,7 +16,7 @@ fx_pair: EURUSD
 tech_indicators:
   macd: [12,26]
   rsi: [14]
-  adx: [14,14]
+  # adx: [14,14]
 actions:
   - long
   - neutral
@@ -39,11 +39,15 @@ pip_size:
   USDJPY: 0.01
 
 # Model parameters
-memory: 100000
+memory: 10000
+start_memory: 100
 learning_rate: 0.001
 dense_params:
-  - {out_features : 256, dropout : 0.5}
-  - {out_features : 128, dropout : 0.5}
+  - {out_features : 2048}
+  - {out_features : 1028}
+  - {out_features : 512}
+  - {out_features : 256}
 conv_params:
+  - {out_channels : 128, kernel_size: 6}
   - {out_channels : 64, kernel_size: 4}
   - {out_channels : 32, kernel_size: 2}

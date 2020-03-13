@@ -1,2 +1,4 @@
 *.pyc
 events.out.tfevents*
+.vscode*
+models/*

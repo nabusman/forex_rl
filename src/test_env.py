@@ -17,7 +17,7 @@ data_dir = '/Data/foreign_exchange_data/'
 
 input_data = torch.randn([batch_size, n_features, n_samples])
 
-env = fx_env.ForexEnv(aggregation, n_samples, actions, fx_pair, pip_size, data_dir)
+env = fx_env.ForexEnv(aggregation, n_samples, actions, fx_pair, pip_size, data_dir, is_test = True)
 
 obs = env.reset()
 

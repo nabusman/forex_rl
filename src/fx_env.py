@@ -26,17 +26,23 @@ class ForexEnv(gym.Env):
     - tech_indicators [dict]: provides the details of the technical indicators
     to be included in the observations e.g. {'macd' : [12,26], 'rsi' : [14]}
     - stop_loss [int]: the trailing stop loss to set for this environment
+    - is_test [bool]: flag to enable test data
+    - neutral_cost [int]: the cost of picking the neutral action, decreases this
+    to force more aggressive trading behavior
     """
     metadata = {'render.modes': ['human']}
 
     def __init__(self, aggregation, n_samples, actions, fx_pair, pip_size, 
-        data_dir, max_slippage = 0.02, tech_indicators = {}, stop_loss = 50):
+        data_dir, max_slippage = 0.02, tech_indicators = {}, stop_loss = 50, 
+        is_test = False, neutral_cost = 0):
         super(ForexEnv, self).__init__()
         self.n_samples = n_samples
         self.stop_loss = stop_loss
         self.max_slippage = max_slippage
         self.actions = actions
         self.pip_size = pip_size
+        self.is_test = is_test
+        self.neutral_cost = neutral_cost
         # Parse aggregation
         if 'min' in aggregation.lower():
             agg_level = 'Min'
@@ -48,7 +54,7 @@ class ForexEnv(gym.Env):
             raise Exception(f'Unrecognized aggregation level {aggregation}')
         # Load Data
         file_path = helpers.get_fx_file_paths(fx_pair, agg_level, 
-            int(aggregation.split(' ')[0]), tech_indicators, data_dir)
+            int(aggregation.split(' ')[0]), tech_indicators, data_dir, is_test)
         self.data = np.load(file_path, mmap_mode = 'r')
         self.tick_data = np.load(
             os.path.join(data_dir, 'npy', f'{fx_pair.upper()}_tick_level.npy'), 
@@ -73,7 +79,7 @@ class ForexEnv(gym.Env):
 
 
     def step(self, action):
-        reward = 0
+        reward = 0 if self.is_test else self.neutral_cost
         self.position = self.actions[action]
         self.start_index = np.searchsorted(self.tick_data[:,0], self.end_time)
         if self.position == 'long':

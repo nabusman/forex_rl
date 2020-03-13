@@ -13,7 +13,7 @@ def get_config(config_path):
 	return config
 
 
-def get_fx_file_paths(fx_pair, agg_level, agg_magnitude, tech_indicators, data_dir,
+def get_fx_file_paths(fx_pair, agg_level, agg_magnitude, tech_indicators, data_dir, is_test = False,
     train_end = '2019-02-01'):
     input_path = os.path.join(data_dir, 'csv')
     output_path = os.path.join(data_dir, 'npy')
@@ -71,4 +71,5 @@ def get_fx_file_paths(fx_pair, agg_level, agg_magnitude, tech_indicators, data_d
     
     for phase in fx_npy.keys():
         np.save(file_paths[phase], fx_npy[phase])
-    return file_paths['train']
+    file_path = file_paths['test'] if is_test else file_paths['train']
+    return file_path

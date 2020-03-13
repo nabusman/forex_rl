@@ -69,11 +69,14 @@ class Agent(nn.Module):
                 self.conv_layers.append(l)
         for i,dense_param in enumerate(dense_params):
             if i == 0 and conv_params == []:
-                self.dense_layers.append(nn.Linear(n_features * n_samples, dense_param['out_features']))
+                self.dense_layers.append(nn.Linear(n_features * n_samples, 
+                    dense_param['out_features']))
             elif i == 0 and conv_params != []:
-                self.dense_layers.append(nn.Linear(conv_output[0] * conv_output[1], dense_param['out_features']))
+                self.dense_layers.append(nn.Linear(conv_output[0] * conv_output[1], 
+                    dense_param['out_features']))
             else:
-                self.dense_layers.append(nn.Linear(dense_params[i-1]['out_features'], dense_param['out_features']))
+                self.dense_layers.append(nn.Linear(dense_params[i-1]['out_features'], 
+                    dense_param['out_features']))
             if 'dropout' in dense_param:
                 self.dense_layers.append(nn.Dropout(dense_param['dropout']))
         self.output = nn.Linear(dense_params[-1]['out_features'], len(actions))

@@ -2,7 +2,6 @@ import os
 import math
 import random
 import argparse
-import pickle
 from datetime import datetime
 
 import numpy as np
@@ -17,13 +16,14 @@ import fx_model
 import helpers
 
 
-def select_action(config, state, policy_net, steps_done):
+def select_action(config, state, policy_net, steps_done, device):
     sample = random.random()
     eps_threshold = config['eps_end'] + (config['eps_start'] - config['eps_end']) * \
         math.exp(-1 * steps_done / config['eps_decay'])
     if sample > eps_threshold:
         with torch.no_grad():
-            action = torch.argmax(policy_net(torch.unsqueeze(state,0))).item()
+            action = torch.argmax(policy_net(
+                torch.unsqueeze(state,0).to(device))).item()
     else:
         action = random.choice(range(len(config['actions'])))
     return action
@@ -69,8 +69,7 @@ def calc_metrics(rewards, info, risk_free_rate = 0.05):
     return metrics
 
 
-def test(model, device, writer, data_dir, config_path, **args):
-    config = helpers.get_config(config_path)
+def evaluate(model, device, writer, config, data_dir, config_path, **args):
     env = fx_env.ForexEnv(
         aggregation = config['aggregation'], 
         n_samples = config['n_samples'],
@@ -86,7 +85,8 @@ def test(model, device, writer, data_dir, config_path, **args):
     state = env.reset()
     while True:
         with torch.no_grad():
-            action = torch.argmax(model(torch.unsqueeze(state,0))).item()
+            action = torch.argmax(model(
+                torch.unsqueeze(state,0).to(device))).item()
         next_state, reward, done, info = env.step(action)
         if done or steps == 100:
             break
@@ -94,22 +94,26 @@ def test(model, device, writer, data_dir, config_path, **args):
         rewards.append(reward)
         writer.add_scalar('test_reward', reward, steps)
     metrics = calc_metrics(np.array(rewards), info)
+    print(f'Test metrics: {metrics}')
     return metrics
 
 
-def save(model, metrics, now_str, model_dir, config_path, **args):
+def save(model, device, metrics, now_str, config, model_dir, config_path, **args):
     # Save Model
-    file_name = f"{now_str}_model_{os.path.basename(config_path).split('.')[0]}.pt"
-    torch.save(model, os.path.join(model_dir, file_name))
+    model_file = f"{now_str}_model.pt"
+    torch.save(model, os.path.join(model_dir, model_file))
     # Save metrics
-    file_name = f"{now_str}_metrics_{os.path.basename(config_path).split('.')[0]}.pkl"
-    with open(os.path.join(model_dir, file_name), 'wb') as f:
-        pickle.dump(metrics, f, protocol = pickle.HIGHEST_PROTOCOL)
+    metrics_file = f"{now_str}_metrics.yaml"
+    with open(os.path.join(model_dir, metrics_file), 'w') as f:
+        yaml.dump(metrics, f, default_flow_style = False)
+    # Save config file
+    config_file = f"{now_str}_config.yaml"
+    with open(os.path.join(model_dir, config_file), 'w') as f:
+        yaml.dump(config, f, default_flow_style = False)
 
 
-def main(device, writer, data_dir, config_path, **args):
+def train(device, writer, config, data_dir, **args):
     # Setup
-    config = helpers.get_config(config_path)
     env = fx_env.ForexEnv(
         aggregation = config['aggregation'], 
         n_samples = config['n_samples'],
@@ -141,11 +145,11 @@ def main(device, writer, data_dir, config_path, **args):
     steps = 0
     state = env.reset()
 
-    print('Starting training...')
     # Training Loop
+    print('Starting training...')
     while True:    
         # Pick action
-        action = select_action(config, state, policy_net, steps)
+        action = select_action(config, state, policy_net, steps, device)
         # Get reward
         next_state, reward, done, info = env.step(action)
         writer.add_scalar('reward', reward, steps)
@@ -179,7 +183,8 @@ def main(device, writer, data_dir, config_path, **args):
             to_break = True
         elif metrics[config['stopping_metric']['type']] >= config['stopping_metric']['threshold'] \
             and metrics[config['stopping_metric']['type']] is not np.inf:
-            to_break = True
+            to_break = False
+            # to_break = True
         if to_break:
             print(f'Solved in {steps} steps with metrics: {metrics}')
             target_net.load_state_dict(policy_net.state_dict())
@@ -206,8 +211,9 @@ if __name__ == '__main__':
     now_str = str(datetime.now()).replace(':', '-').replace(' ', '_').split('.')[0]
     writer = SummaryWriter(os.path.join(args.log_dir, now_str))
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    config = helpers.get_config(args.config_path)
     # Main
-    model = main(device, writer, **vars(args))
-    metrics = test(model, device, writer, **vars(args))
-    save(model, metrics, now_str, **vars(args))
+    model = train(device, writer, config, **vars(args))
+    metrics = evaluate(model, device, writer, config, **vars(args))
+    save(model, device, metrics, now_str, config, **vars(args))
     writer.close()

@@ -7,6 +7,7 @@ from datetime import datetime
 import numpy as np
 import yaml
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
@@ -124,20 +125,20 @@ def train(device, writer, config, data_dir, **args):
         tech_indicators = config['tech_indicators'],
         neutral_cost = config['neutral_cost']
     )
-    policy_net = fx_model.Agent(
-        n_features = env.observation_space.shape[0],
-        n_samples = env.observation_space.shape[1],
-        actions = env.actions,
-        dense_params = config['dense_params'],        
-        conv_params = config['conv_params'],        
-    ).to(device)
-    target_net = fx_model.Agent(
-        n_features = env.observation_space.shape[0],
-        n_samples = env.observation_space.shape[1],
-        actions = env.actions,
-        dense_params = config['dense_params'],        
-        conv_params = config['conv_params'],        
-    ).to(device)
+    policy_net = nn.DataParallel(fx_model.Agent(
+            n_features = env.observation_space.shape[0],
+            n_samples = env.observation_space.shape[1],
+            actions = env.actions,
+            dense_params = config['dense_params'],        
+            conv_params = config['conv_params'],        
+        )).to(device)
+    target_net = nn.DataParallel(fx_model.Agent(
+            n_features = env.observation_space.shape[0],
+            n_samples = env.observation_space.shape[1],
+            actions = env.actions,
+            dense_params = config['dense_params'],        
+            conv_params = config['conv_params'],        
+        )).to(device)
     target_net.load_state_dict(policy_net.state_dict())
     target_net.eval()
     optimizer = optim.AdamW(policy_net.parameters(), lr = config['learning_rate'])
@@ -183,8 +184,7 @@ def train(device, writer, config, data_dir, **args):
             to_break = True
         elif metrics[config['stopping_metric']['type']] >= config['stopping_metric']['threshold'] \
             and metrics[config['stopping_metric']['type']] is not np.inf:
-            to_break = False
-            # to_break = True
+            to_break = True
         if to_break:
             print(f'Solved in {steps} steps with metrics: {metrics}')
             target_net.load_state_dict(policy_net.state_dict())

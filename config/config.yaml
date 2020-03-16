@@ -1,20 +1,20 @@
 # RL parameters
-batch_size: 512
+batch_size: 32
 gamma: 0.999
 eps_start: 0.9
 eps_end: 0.05
 eps_decay: 200
 target_update: 100
-max_steps: 10000
+max_steps: 5000
 stopping_metric:
   type: sortino
   threshold: 2.0
 
 # Environment parameters
 aggregation: 1 min
-n_samples: 100
+n_samples: 150
 fx_pair: EURUSD
-neutral_cost: -100
+neutral_cost: -750
 tech_indicators:
   macd: [12,26]
   rsi: [14]
@@ -45,11 +45,19 @@ memory: 10000
 start_memory: 1000
 learning_rate: 0.001
 dense_params:
-  - {out_features : 1028}
-  - {out_features : 1028}
-  - {out_features : 1028}
-  - {out_features : 1028}
+  - {out_features : 2048}
+  - {out_features : 2048}
+  - {out_features : 2048}
+  - {out_features : 2048}
+  - {out_features : 2048}
+  - {out_features : 2048}
+  - {out_features : 2048}
+  - {out_features : 2048}
+  - {out_features : 2048}
+  - {out_features : 2048}
+  - {out_features : 2048}
+  - {out_features : 2048}
 conv_params:
-  - {out_channels : 128, kernel_size: 6}
-  - {out_channels : 64, kernel_size: 4}
-  - {out_channels : 32, kernel_size: 2}
+  - {out_channels : 512, kernel_size: 6}
+  - {out_channels : 512, kernel_size: 4}
+  - {out_channels : 512, kernel_size: 2}

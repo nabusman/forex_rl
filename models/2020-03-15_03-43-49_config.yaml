@@ -1,0 +1,63 @@
+actions:
+- long
+- neutral
+- short
+aggregation: 1 min
+batch_size: 32
+conv_params:
+- kernel_size: 6
+  out_channels: 70
+- kernel_size: 6
+  out_channels: 70
+dense_params:
+- out_features: 3273
+- out_features: 3273
+- out_features: 3273
+- out_features: 3273
+- out_features: 3273
+- out_features: 3273
+- out_features: 3273
+- out_features: 3273
+- out_features: 3273
+- out_features: 3273
+- out_features: 3273
+- out_features: 3273
+- out_features: 3273
+- out_features: 3273
+eps_decay: 200
+eps_end: 0.05
+eps_start: 0.9
+fx_pair: EURUSD
+gamma: 0.999
+learning_rate: 0.004421739262610675
+max_steps: 5000
+memory: 10000
+n_samples: 100
+neutral_cost: -740
+pip_size:
+  AUDJPY: 0.0001
+  AUDNZD: 0.0001
+  AUDUSD: 0.0001
+  CADJPY: 0.01
+  CHFJPY: 0.01
+  EURCHF: 0.0001
+  EURGBP: 0.0001
+  EURJPY: 0.01
+  EURUSD: 0.0001
+  GBPJPY: 0.01
+  GBPUSD: 0.0001
+  NZDUSD: 0.0001
+  USDCAD: 0.0001
+  USDCHF: 0.0001
+  USDJPY: 0.01
+start_memory: 1000
+stopping_metric:
+  threshold: 2.0
+  type: sortino
+target_update: 100
+tech_indicators:
+  macd:
+  - 12
+  - 26
+  rsi:
+  - 14

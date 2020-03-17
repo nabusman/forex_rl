@@ -1,5 +1,5 @@
 # RL parameters
-batch_size: 32
+batch_size: 16
 gamma: 0.999
 eps_start: 0.9
 eps_end: 0.05
@@ -12,7 +12,7 @@ stopping_metric:
 
 # Environment parameters
 aggregation: 1 min
-n_samples: 150
+n_samples: 100
 fx_pair: EURUSD
 neutral_cost: -750
 tech_indicators:

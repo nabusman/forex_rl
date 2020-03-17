@@ -43,7 +43,7 @@ best_parameters, values, experiment, model = optimize(
         {
             'name' : 'n_conv_layers',
             'type' : 'range',
-            'bounds' : [0,10],
+            'bounds' : [0,6],
         },
         {
             'name' : 'conv_filter_size',
@@ -58,7 +58,7 @@ best_parameters, values, experiment, model = optimize(
         {
             'name' : 'n_dense_layers',
             'type' : 'range',
-            'bounds' : [8,20],
+            'bounds' : [8,15],
         },
         {
             'name' : 'n_nodes_dense_layers',

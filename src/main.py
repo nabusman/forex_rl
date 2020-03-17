@@ -24,7 +24,7 @@ def select_action(config, state, policy_net, steps_done, device):
     if sample > eps_threshold:
         with torch.no_grad():
             action = torch.argmax(policy_net(
-                torch.unsqueeze(state,0).to(device))).item()
+                torch.unsqueeze(state,0).cuda(1))).item()
     else:
         action = random.choice(range(len(config['actions'])))
     return action
@@ -34,16 +34,16 @@ def calc_loss(policy_net, target_net, transitions, gamma, device):
     non_final_mask = [True if x['next_state'] is not None else False 
         for x in transitions]
     non_final_next_states = torch.cat([torch.unsqueeze(x['next_state'], 0) 
-        for x in transitions if x['next_state'] is not None]).to(device)
-    states_batch = torch.cat([torch.unsqueeze(x['state'], 0) for x in transitions]).to(device)
-    rewards_batch = torch.tensor([x['reward'] for x in transitions]).to(device)
-    actions_batch = torch.tensor([x['action'] for x in transitions]).to(device)
+        for x in transitions if x['next_state'] is not None]).cuda(0)
+    states_batch = torch.cat([torch.unsqueeze(x['state'], 0) for x in transitions]).cuda(1)
+    rewards_batch = torch.tensor([x['reward'] for x in transitions]).cuda(0)
+    actions_batch = torch.tensor([x['action'] for x in transitions]).cuda(1)
     state_action_values = torch.squeeze(
-        policy_net(states_batch).gather(1, actions_batch.view(-1,1)).to(device))
-    next_state_values = torch.zeros(len(transitions), device=device)
+        policy_net(states_batch).gather(1, actions_batch.view(-1,1)).cuda(1))
+    next_state_values = torch.zeros(len(transitions)).cuda(0)
     next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0].detach()
     expected_state_action_values = (next_state_values * gamma) + rewards_batch
-    loss = F.mse_loss(state_action_values, expected_state_action_values)
+    loss = F.mse_loss(state_action_values, expected_state_action_values.cuda(1))
     return loss
 
 
@@ -54,18 +54,18 @@ def calc_metrics(rewards, info, risk_free_rate = 0.05):
     median_reward = np.median(rewards)
     mean_returns = np.mean(rewards / info['starting_balance'] - risk_free_rate)
     sharpe = mean_returns / std if std != 0 else 0
-    downside_deviation = np.sqrt(np.sum(rewards[np.argwhere(rewards < 0)] ** 2)) \
-        / len(rewards) if len(rewards) != 0 else 0
+    downside_deviation = np.sqrt(np.sum(rewards[np.argwhere(rewards < 0)] ** 2) / len(rewards)) \
+        if len(rewards) != 0 else 0
     sortino = (roi - risk_free_rate) / downside_deviation if downside_deviation != 0 else 0
     metrics = {
-        'sharpe' : sharpe, 
-        'sortino' : sortino, 
-        'mean' : mean_reward, 
-        'median' : median_reward,
-        'downside_deviation' : downside_deviation,
-        'standard_deviation' : std,
-        'roi' : roi,
-        'account_balance' : info['account_balance'],
+        'sharpe' : float(sharpe), 
+        'sortino' : float(sortino), 
+        'mean' : float(mean_reward), 
+        'median' : float(median_reward),
+        'downside_deviation' : float(downside_deviation),
+        'standard_deviation' : float(std),
+        'roi' : float(roi),
+        'account_balance' : float(info['account_balance']),
     }
     return metrics
 
@@ -87,7 +87,7 @@ def evaluate(model, device, writer, config, data_dir, config_path, **args):
     while True:
         with torch.no_grad():
             action = torch.argmax(model(
-                torch.unsqueeze(state,0).to(device))).item()
+                torch.unsqueeze(state,0).cuda(1))).item()
         next_state, reward, done, info = env.step(action)
         if done or steps == 100:
             break
@@ -131,14 +131,14 @@ def train(device, writer, config, data_dir, **args):
             actions = env.actions,
             dense_params = config['dense_params'],        
             conv_params = config['conv_params'],        
-        )).to(device)
+        ), device_ids = [1,0]).cuda(1)
     target_net = nn.DataParallel(fx_model.Agent(
             n_features = env.observation_space.shape[0],
             n_samples = env.observation_space.shape[1],
             actions = env.actions,
             dense_params = config['dense_params'],        
             conv_params = config['conv_params'],        
-        )).to(device)
+        ), device_ids = [0,1]).cuda(0)
     target_net.load_state_dict(policy_net.state_dict())
     target_net.eval()
     optimizer = optim.AdamW(policy_net.parameters(), lr = config['learning_rate'])
@@ -196,7 +196,8 @@ if __name__ == '__main__':
     # Parse command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--config_path', type = str, 
-        help = 'Full path to config file to use')
+        help = 'Full path to config file to use',
+        default = '/home/nabs/Projects/forex_rl/config/config.yaml')
     parser.add_argument('--model_dir', type = str, 
         help = 'Full path to the model directory to use',
         default = '/home/nabs/Projects/forex_rl/models')

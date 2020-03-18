@@ -25,13 +25,14 @@ def forex_eval(params):
             for _ in range(params['n_dense_layers'])]
     if 'n_conv_layers' in params and 'conv_filter_size' in params and 'conv_kernel_size' in params:
         config['conv_params'] = [{'out_channels' : params['conv_filter_size'], 
-            'kernel_size' : params['conv_kernel_size']} for _ in range(params['n_conv_layers'])]
+            'kernel_size' : params['conv_kernel_size'], 'stride' : 1} 
+            for _ in range(params['n_conv_layers'])]
     for param,value in params.items():
         if param in config: config[param] = value
     model = train(device, writer, config, data_dir)
     metrics = evaluate(model, device, writer, config, data_dir, config_path)
     save(model, device, metrics, now_str, config, model_dir, config_path)
-    return {k : (v, 0.0) for k,v in metrics.items()}
+    return {k : (v, 0.0) for k,v in metrics.items() if v is not tuple}
 
 best_parameters, values, experiment, model = optimize(
     parameters = [
@@ -43,30 +44,36 @@ best_parameters, values, experiment, model = optimize(
         {
             'name' : 'n_conv_layers',
             'type' : 'range',
-            'bounds' : [0,6],
+            'bounds' : [1,10],
         },
         {
             'name' : 'conv_filter_size',
             'type' : 'range',
-            'bounds' : [10,500],
+            'bounds' : [10,512],
         },
         {
             'name' : 'conv_kernel_size',
             'type' : 'range',
             'bounds' : [1,10],
         },
+        # {
+        #     'name' : 'conv_stride',
+        #     'type' : 'range',
+        #     'bounds' : [1,10],
+        # },
         {
             'name' : 'n_dense_layers',
             'type' : 'range',
-            'bounds' : [8,15],
+            'bounds' : [6,12],
         },
         {
             'name' : 'n_nodes_dense_layers',
             'type' : 'range',
-            'bounds' : [2000,5000],
+            'bounds' : [512,2048],
         },
     ],
     evaluation_function = forex_eval,
-    objective_name = 'sortino',
-    total_trials = 20,
+    objective_name = 'mean',
+    total_trials = 50,
+    parameter_constraints=["n_dense_layers + n_conv_layers <= 12"],
 )

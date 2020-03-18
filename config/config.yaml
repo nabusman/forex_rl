@@ -11,7 +11,7 @@ stopping_metric:
   threshold: 2.0
 
 # Environment parameters
-aggregation: 1 min
+aggregation: 15 min
 n_samples: 100
 fx_pair: EURUSD
 neutral_cost: -750
@@ -47,17 +47,14 @@ learning_rate: 0.001
 dense_params:
   - {out_features : 2048}
   - {out_features : 2048}
-  - {out_features : 2048}
-  - {out_features : 2048}
-  - {out_features : 2048}
-  - {out_features : 2048}
-  - {out_features : 2048}
-  - {out_features : 2048}
-  - {out_features : 2048}
-  - {out_features : 2048}
-  - {out_features : 2048}
-  - {out_features : 2048}
 conv_params:
-  - {out_channels : 512, kernel_size: 6}
-  - {out_channels : 512, kernel_size: 4}
-  - {out_channels : 512, kernel_size: 2}
+  - {out_channels : 512, kernel_size: 1}
+  - {out_channels : 512, kernel_size: 1}
+  - {out_channels : 512, kernel_size: 1}
+  - {out_channels : 512, kernel_size: 1}
+  - {out_channels : 512, kernel_size: 1}
+  - {out_channels : 512, kernel_size: 1}
+  - {out_channels : 512, kernel_size: 1}
+  - {out_channels : 512, kernel_size: 1}
+  - {out_channels : 512, kernel_size: 1}
+  - {out_channels : 512, kernel_size: 1}

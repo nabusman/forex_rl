@@ -54,8 +54,8 @@ def calc_metrics(rewards, info, risk_free_rate = 0.05):
     median_reward = np.median(rewards)
     mean_returns = np.mean(rewards / info['starting_balance'] - risk_free_rate)
     sharpe = mean_returns / std if std != 0 else 0
-    downside_deviation = np.sqrt(np.sum(rewards[np.argwhere(rewards < 0)] ** 2) / len(rewards)) \
-        if len(rewards) != 0 else 0
+    downside_deviation = np.std(rewards[np.argwhere(rewards < 0)] ** 2)
+    downside_deviation = 0 if np.isnan(downside_deviation) else downside_deviation
     sortino = (roi - risk_free_rate) / downside_deviation if downside_deviation != 0 else 0
     metrics = {
         'sharpe' : float(sharpe), 
@@ -147,6 +147,7 @@ def train(device, writer, config, data_dir, **args):
     state = env.reset()
 
     # Training Loop
+    print(policy_net)
     print('Starting training...')
     while True:    
         # Pick action

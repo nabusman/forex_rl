@@ -172,6 +172,8 @@ def train(device, writer, config, data_dir, **args):
         optimizer.step()
         # Calc metrics, if above a level quit training
         rewards = np.array([x['reward'] for x in transitions if x['reward'] is not None])
+        # This enables the model to be penalized for not taking any action and removes noise from the metrics calculation
+        rewards[np.where(rewards == config['neutral_cost'])] = 0.0
         metrics = calc_metrics(rewards, info)
         for metric,value in metrics.items():
             writer.add_scalar(metric, metrics[metric], steps)

@@ -84,19 +84,20 @@ class ForexEnv(gym.Env):
         self.start_index = np.searchsorted(self.tick_data[:,0], self.end_time)
         if self.position == 'long':
             self.enter_price = self.tick_data[self.start_index,2]
-            self.exit_price = self._calc_exit_price() - (self._calc_exit_price() * (self.max_slippage * np.random.random()))
+            raw_exit_price = self._calc_exit_price()
+            self.exit_price = raw_exit_price - (raw_exit_price * self.max_slippage * np.random.random())
             reward = (self.exit_price - self.enter_price) / self.pip_size * self.dollars_per_pip
         elif self.position == 'short':
             self.enter_price = self.tick_data[self.start_index,1]
-            self.exit_price = self._calc_exit_price() + (self._calc_exit_price() * (self.max_slippage * np.random.random()))
+            raw_exit_price = self._calc_exit_price()
+            self.exit_price = raw_exit_price + (raw_exit_price * self.max_slippage * np.random.random())
             reward = (self.enter_price - self.exit_price) / self.pip_size * self.dollars_per_pip
         self.account_balance += reward
         done = True if self.account_balance < 0 or self.account_balance > self.max_balance else False
-        # if done:
-        #     self.obs = None
-        # else:
-        #     self.obs, self.end_time = self._get_observation()
-        self.obs, self.end_time = self._get_observation()
+        if done:
+            self.obs = None
+        else:
+            self.obs, self.end_time = self._get_observation()
         info = {'account_balance' : self.account_balance, 
             'starting_balance' : self.starting_balance}
         return self.obs, reward, done, info

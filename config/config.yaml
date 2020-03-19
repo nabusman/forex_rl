@@ -5,20 +5,20 @@ eps_start: 0.9
 eps_end: 0.05
 eps_decay: 200
 target_update: 100
-max_steps: 10000
+max_steps: 4000
 stopping_metric:
   type: sortino
   threshold: 2.0
 
 # Environment parameters
-aggregation: 1 hour
+aggregation: 30 min
 n_samples: 100
 fx_pair: EURUSD
 neutral_cost: 0
 tech_indicators:
   macd: [12,26]
   rsi: [14]
-  # adx: [14,14]
+  adx: [14,14]
 actions:
   - long
   - neutral

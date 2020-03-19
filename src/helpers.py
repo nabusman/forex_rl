@@ -59,6 +59,8 @@ def get_fx_file_paths(fx_pair, agg_level, agg_magnitude, tech_indicators, data_d
                 df = indicators.macd(df, *params)
             elif indicator == 'rsi':
                 df = indicators.rsi(df, *params)
+            elif indicator == 'adx':
+                df = indicators.adx(df, *params)
             else:
                 raise Exception(f'Unrecognized technical indicator {indicator}')
         # Add to phase numpy array

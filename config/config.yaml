@@ -5,16 +5,16 @@ eps_start: 0.9
 eps_end: 0.05
 eps_decay: 200
 target_update: 100
-max_steps: 5000
+max_steps: 10000
 stopping_metric:
   type: sortino
   threshold: 2.0
 
 # Environment parameters
-aggregation: 15 min
+aggregation: 1 hour
 n_samples: 100
 fx_pair: EURUSD
-neutral_cost: -750
+neutral_cost: 0
 tech_indicators:
   macd: [12,26]
   rsi: [14]
@@ -41,8 +41,8 @@ pip_size:
   USDJPY: 0.01
 
 # Model parameters
-memory: 10000
-start_memory: 1000
+memory: 1000
+start_memory: 100
 learning_rate: 0.001
 dense_params:
   - {out_features : 2048}

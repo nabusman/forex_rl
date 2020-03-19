@@ -73,7 +73,7 @@ best_parameters, values, experiment, model = optimize(
         },
     ],
     evaluation_function = forex_eval,
-    objective_name = 'mean',
-    total_trials = 50,
+    objective_name = 'sortino',
+    total_trials = 20,
     parameter_constraints=["n_dense_layers + n_conv_layers <= 12"],
 )

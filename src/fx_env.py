@@ -29,11 +29,14 @@ class ForexEnv(gym.Env):
     - is_test [bool]: flag to enable test data
     - neutral_cost [int]: the cost of picking the neutral action, decreases this
     to force more aggressive trading behavior
+    - max_slippage [int]: the maximum number of pips of slippage in exiting a 
+    position, this will be multiplied by a random number so slippage is between 
+    [0,max_slippage] pips with a uniform distribution.
     """
     metadata = {'render.modes': ['human']}
 
     def __init__(self, aggregation, n_samples, actions, fx_pair, pip_size, 
-        data_dir, max_slippage = 0.01, tech_indicators = {}, stop_loss = 50, 
+        data_dir, max_slippage = 10, tech_indicators = {}, stop_loss = 50, 
         is_test = False, neutral_cost = 0):
         super(ForexEnv, self).__init__()
         self.n_samples = n_samples
@@ -61,7 +64,7 @@ class ForexEnv(gym.Env):
             mmap_mode = 'r')
         self.action_space = spaces.Discrete(n = len(self.actions))
         # Note: "4" is for OHLC
-        self.observation_space = spaces.Box(low = -np.inf, high = np.inf, 
+        self.observation_space = spaces.Box(low = 0.0, high = 1.0, 
             shape = (4 + indicators.get_return_cols(tech_indicators.keys()), self.n_samples), 
             dtype = np.float32)
 
@@ -70,8 +73,9 @@ class ForexEnv(gym.Env):
         self.enter_price = None
         self.start_index = None
         self.position = None
-        self.dollars_per_pip = 100 # Change this to allow more failures
+        self.dollars_per_pip = 10 # Change this to allow more failures
         self.starting_balance = 100000
+        self.max_reward = 10000 # Scale rewards by this number
         self.account_balance = self.starting_balance
         self.max_balance = self.account_balance * 100
         self.obs, self.end_time = self._get_observation()
@@ -85,13 +89,18 @@ class ForexEnv(gym.Env):
         if self.position == 'long':
             self.enter_price = self.tick_data[self.start_index,2]
             raw_exit_price = self._calc_exit_price()
-            self.exit_price = raw_exit_price - (raw_exit_price * self.max_slippage * np.random.random())
+            # self.exit_price = raw_exit_price - (raw_exit_price * self.max_slippage * np.random.random())
+            self.exit_price = raw_exit_price - (self.pip_size * self.max_slippage * np.random.random())
             reward = (self.exit_price - self.enter_price) / self.pip_size * self.dollars_per_pip
         elif self.position == 'short':
             self.enter_price = self.tick_data[self.start_index,1]
             raw_exit_price = self._calc_exit_price()
-            self.exit_price = raw_exit_price + (raw_exit_price * self.max_slippage * np.random.random())
+            # self.exit_price = raw_exit_price + (raw_exit_price * self.max_slippage * np.random.random())
+            self.exit_price = raw_exit_price + (self.pip_size * self.max_slippage * np.random.random())
             reward = (self.enter_price - self.exit_price) / self.pip_size * self.dollars_per_pip
+        scaled_reward = reward / self.max_reward
+        scaled_reward = 1.0 if scaled_reward > 1 else scaled_reward
+        scaled_reward = -1.0 if scaled_reward < -1 else scaled_reward
         self.account_balance += reward
         done = True if self.account_balance < 0 or self.account_balance > self.max_balance else False
         if done:
@@ -100,7 +109,7 @@ class ForexEnv(gym.Env):
             self.obs, self.end_time = self._get_observation()
         info = {'account_balance' : self.account_balance, 
             'starting_balance' : self.starting_balance}
-        return self.obs, reward, done, info
+        return self.obs, scaled_reward, reward, done, info
 
 
     def _get_observation(self):

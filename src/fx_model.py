@@ -13,11 +13,12 @@ class ReplayMemory(object):
         self.capacity = capacity
         self.memory = deque()
     
-    def add(self, state, action, next_state, reward):
+    def add(self, state, action, next_state, scaled_reward, reward):
         if len(self.memory) == self.capacity:
             self.memory.popleft()
         self.memory.append({'state' : state, 'action' : action, 
-            'next_state' : next_state, 'reward' : reward})
+            'next_state' : next_state, 'scaled_reward' : scaled_reward,
+            'reward' : reward})
 
     def sample(self, batch_size):
         return random.sample(self.memory, batch_size)

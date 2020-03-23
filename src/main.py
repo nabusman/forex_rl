@@ -36,7 +36,7 @@ def calc_loss(policy_net, target_net, transitions, gamma, device):
     non_final_next_states = torch.cat([torch.unsqueeze(x['next_state'], 0) 
         for x in transitions if x['next_state'] is not None]).cuda(0)
     states_batch = torch.cat([torch.unsqueeze(x['state'], 0) for x in transitions]).cuda(1)
-    rewards_batch = torch.tensor([x['reward'] for x in transitions]).cuda(0)
+    rewards_batch = torch.tensor([x['scaled_reward'] for x in transitions]).cuda(0)
     actions_batch = torch.tensor([x['action'] for x in transitions]).cuda(1)
     state_action_values = torch.squeeze(
         policy_net(states_batch).gather(1, actions_batch.view(-1,1)).cuda(1))
@@ -88,8 +88,8 @@ def evaluate(model, device, writer, config, data_dir, config_path, **args):
         with torch.no_grad():
             action = torch.argmax(model(
                 torch.unsqueeze(state,0).cuda(1))).item()
-        next_state, reward, done, info = env.step(action)
-        if done or steps == 100:
+        next_state, scaled_reward, reward, done, info = env.step(action)
+        if steps == 100:
             break
         steps += 1
         rewards.append(reward)
@@ -153,10 +153,11 @@ def train(device, writer, config, data_dir, **args):
         # Pick action
         action = select_action(config, state, policy_net, steps, device)
         # Get reward
-        next_state, reward, done, info = env.step(action)
+        next_state, scaled_reward, reward, done, info = env.step(action)
+        writer.add_scalar('scaled_reward', scaled_reward, steps)
         writer.add_scalar('reward', reward, steps)
         # add to memory
-        memory.add(state, action, next_state, reward)
+        memory.add(state, action, next_state, scaled_reward, reward)
         if done:
             state = env.reset()
         # if memory is not big enough continue
@@ -172,7 +173,7 @@ def train(device, writer, config, data_dir, **args):
         optimizer.step()
         # Calc metrics, if above a level quit training
         rewards = np.array([x['reward'] for x in transitions if x['reward'] is not None])
-        # This enables the model to be penalized for not taking any action and removes noise from the metrics calculation
+        # Penalizes for not taking any action and but doesn't influence the metrics calculation
         rewards[np.where(rewards == config['neutral_cost'])] = 0.0
         metrics = calc_metrics(rewards, info)
         for metric,value in metrics.items():

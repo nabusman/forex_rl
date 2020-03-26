@@ -11,6 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
 
 import fx_env
 import fx_model
@@ -50,6 +51,7 @@ def calc_loss(policy_net, target_net, transitions, gamma, device):
 def calc_metrics(rewards, info, risk_free_rate = 0.05):
     roi = (info['account_balance'] - info['starting_balance']) / info['starting_balance']
     mean_reward = np.mean(rewards)
+    sum_reward = np.sum(rewards)
     std = np.std(rewards)
     median_reward = np.median(rewards)
     mean_returns = np.mean(rewards / info['starting_balance'] - risk_free_rate)
@@ -61,6 +63,7 @@ def calc_metrics(rewards, info, risk_free_rate = 0.05):
         'sharpe' : float(sharpe), 
         'sortino' : float(sortino), 
         'mean' : float(mean_reward), 
+        'sum' : float(sum_reward), 
         'median' : float(median_reward),
         'downside_deviation' : float(downside_deviation),
         'standard_deviation' : float(std),
@@ -83,6 +86,7 @@ def evaluate(model, device, writer, config, data_dir, config_path, **args):
     )
     rewards = []
     steps = 0
+    cum_rewards = 0
     state = env.reset()
     while True:
         with torch.no_grad():
@@ -93,7 +97,9 @@ def evaluate(model, device, writer, config, data_dir, config_path, **args):
             break
         steps += 1
         rewards.append(reward)
+        cum_rewards += reward
         writer.add_scalar('test_reward', reward, steps)
+        writer.add_scalar('test_cum_reward', cum_rewards, steps)
     metrics = calc_metrics(np.array(rewards), info)
     print(f'Test metrics: {metrics}')
     return metrics
@@ -123,7 +129,8 @@ def train(device, writer, config, data_dir, **args):
         pip_size = config['pip_size'][config['fx_pair']],
         data_dir = data_dir,
         tech_indicators = config['tech_indicators'],
-        neutral_cost = config['neutral_cost']
+        neutral_cost = config['neutral_cost'],
+        stop_loss = config['stop_loss'],
     )
     policy_net = nn.DataParallel(fx_model.Agent(
             n_features = env.observation_space.shape[0],
@@ -144,7 +151,9 @@ def train(device, writer, config, data_dir, **args):
     optimizer = optim.AdamW(policy_net.parameters(), lr = config['learning_rate'])
     memory = fx_model.ReplayMemory(config['memory'])
     steps = 0
+    cum_rewards = 0
     state = env.reset()
+    pbar = tqdm(total = config['max_steps'])
 
     # Training Loop
     print(policy_net)
@@ -154,8 +163,10 @@ def train(device, writer, config, data_dir, **args):
         action = select_action(config, state, policy_net, steps, device)
         # Get reward
         next_state, scaled_reward, reward, done, info = env.step(action)
+        cum_rewards += reward
         writer.add_scalar('scaled_reward', scaled_reward, steps)
         writer.add_scalar('reward', reward, steps)
+        writer.add_scalar('cum_reward', cum_rewards, steps)
         # add to memory
         memory.add(state, action, next_state, scaled_reward, reward)
         if done:
@@ -178,10 +189,11 @@ def train(device, writer, config, data_dir, **args):
         metrics = calc_metrics(rewards, info)
         for metric,value in metrics.items():
             writer.add_scalar(metric, metrics[metric], steps)
-        print(f'Step number {steps} - metrics: {metrics}')
+        # print(f'Step number {steps} - metrics: {metrics}')
         # Sync with target if X trades have happened
         if steps % config['target_update'] == 0:
             target_net.load_state_dict(policy_net.state_dict())
+        pbar.update(1)
         steps += 1
         to_break = False
         if steps == config['max_steps']:
@@ -193,6 +205,7 @@ def train(device, writer, config, data_dir, **args):
             print(f'Solved in {steps} steps with metrics: {metrics}')
             target_net.load_state_dict(policy_net.state_dict())
             break
+    pbar.close()
     return target_net
 
 

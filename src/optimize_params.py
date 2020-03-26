@@ -39,9 +39,8 @@ best_parameters, values, experiment, model = optimize(
     parameters = [
         {
             'name' : 'n_conv_layers',
-            'type' : 'choice',
-            'values' : list(range(2,14,2)), # [2, 4, 6, 8, 10, 12]
-            'is_ordered' : True,
+            'type' : 'range',
+            'bounds' : [2,12],
         },
         {
             'name' : 'conv_filter_size',
@@ -62,6 +61,12 @@ best_parameters, values, experiment, model = optimize(
             'is_ordered' : True,
         },
         {
+            'name' : 'stop_loss',
+            'type' : 'choice',
+            'values' : list(range(30,200, 30)), # [30, 60, 90, 120, 150, 180]
+            'is_ordered' : True,
+        },
+        {
             'name' : 'aggregation',
             'type' : 'choice',
             'values' : ['1 min', '5 min', '15 min', '30 min', '1 hour'],
@@ -69,9 +74,8 @@ best_parameters, values, experiment, model = optimize(
         },
         {
             'name' : 'n_dense_layers',
-            'choice' : 'range',
-            'values' : list(range(2,14,2)), # [2, 4, 6, 8, 10, 12]
-            'is_ordered' : True,
+            'type' : 'range',
+            'bounds' : [2,12],
         },
         {
             'name' : 'n_nodes_dense_layers',
@@ -81,7 +85,7 @@ best_parameters, values, experiment, model = optimize(
         },
     ],
     evaluation_function = forex_eval,
-    objective_name = 'sortino',
+    objective_name = 'mean',
     total_trials = 20,
     parameter_constraints=["n_dense_layers + n_conv_layers <= 16"],
 )

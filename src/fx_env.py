@@ -32,12 +32,17 @@ class ForexEnv(gym.Env):
     - max_slippage [int]: the maximum number of pips of slippage in exiting a 
     position, this will be multiplied by a random number so slippage is between 
     [0,max_slippage] pips with a uniform distribution.
+    - dollars_per_pip [int]: how many dollars per pip the trade is, this is normally
+    dependent on the amount of money invested but here we keep it constant. Increase
+    this value to create a more risky agent.
+    - enable_mmap [bool]: If mmap_mode is enabled for the numpy data loads, turn this
+    on if you are getting system memory OOM errors.
     """
     metadata = {'render.modes': ['human']}
 
     def __init__(self, aggregation, n_samples, actions, fx_pair, pip_size, 
-        data_dir, max_slippage = 10, tech_indicators = {}, stop_loss = 50, 
-        is_test = False, neutral_cost = 0):
+        data_dir, max_slippage = 0, tech_indicators = {}, stop_loss = 50, 
+        is_test = False, neutral_cost = 0, dollars_per_pip = 10, enable_mmap = False):
         super(ForexEnv, self).__init__()
         self.n_samples = n_samples
         self.stop_loss = stop_loss
@@ -46,6 +51,7 @@ class ForexEnv(gym.Env):
         self.pip_size = pip_size
         self.is_test = is_test
         self.neutral_cost = neutral_cost
+        self.dollars_per_pip = dollars_per_pip
         # Parse aggregation
         if 'min' in aggregation.lower():
             agg_level = 'Min'
@@ -58,10 +64,15 @@ class ForexEnv(gym.Env):
         # Load Data
         file_path = helpers.get_fx_file_paths(fx_pair, agg_level, 
             int(aggregation.split(' ')[0]), tech_indicators, data_dir, is_test)
-        self.data = np.load(file_path, mmap_mode = 'r')
-        self.tick_data = np.load(
-            os.path.join(data_dir, 'npy', f'{fx_pair.upper()}_tick_level.npy'), 
-            mmap_mode = 'r')
+        if enable_mmap:
+            self.data = np.load(file_path, mmap_mode = 'r')
+            self.tick_data = np.load(
+                os.path.join(data_dir, 'npy', f'{fx_pair.upper()}_tick_level.npy'), 
+                mmap_mode = 'r')
+        else:
+            self.data = np.load(file_path)
+            self.tick_data = np.load(
+                os.path.join(data_dir, 'npy', f'{fx_pair.upper()}_tick_level.npy'))
         self.action_space = spaces.Discrete(n = len(self.actions))
         # Note: "4" is for OHLC
         self.observation_space = spaces.Box(low = 0.0, high = 1.0, 
@@ -73,7 +84,6 @@ class ForexEnv(gym.Env):
         self.enter_price = None
         self.start_index = None
         self.position = None
-        self.dollars_per_pip = 10 # Change this to allow more failures
         self.starting_balance = 100000
         self.max_reward = 10000 # Scale rewards by this number
         self.account_balance = self.starting_balance
@@ -89,15 +99,14 @@ class ForexEnv(gym.Env):
         if self.position == 'long':
             self.enter_price = self.tick_data[self.start_index,2]
             raw_exit_price = self._calc_exit_price()
-            # self.exit_price = raw_exit_price - (raw_exit_price * self.max_slippage * np.random.random())
             self.exit_price = raw_exit_price - (self.pip_size * self.max_slippage * np.random.random())
-            reward = (self.exit_price - self.enter_price) / self.pip_size * self.dollars_per_pip
+            net_pips = (self.exit_price - self.enter_price) / self.pip_size
         elif self.position == 'short':
             self.enter_price = self.tick_data[self.start_index,1]
             raw_exit_price = self._calc_exit_price()
-            # self.exit_price = raw_exit_price + (raw_exit_price * self.max_slippage * np.random.random())
             self.exit_price = raw_exit_price + (self.pip_size * self.max_slippage * np.random.random())
-            reward = (self.enter_price - self.exit_price) / self.pip_size * self.dollars_per_pip
+            net_pips = (self.enter_price - self.exit_price) / self.pip_size
+        reward = net_pips * self.dollars_per_pip
         scaled_reward = reward / self.max_reward
         scaled_reward = 1.0 if scaled_reward > 1 else scaled_reward
         scaled_reward = -1.0 if scaled_reward < -1 else scaled_reward

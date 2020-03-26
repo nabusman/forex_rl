@@ -2,3 +2,4 @@
 events.out.tfevents*
 .vscode*
 *.pt
+*.pkl

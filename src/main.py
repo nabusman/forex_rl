@@ -153,11 +153,11 @@ def train(device, writer, config, data_dir, **args):
     steps = 0
     cum_rewards = 0
     state = env.reset()
-    pbar = tqdm(total = config['max_steps'])
 
     # Training Loop
     print(policy_net)
     print('Starting training...')
+    pbar = tqdm(total = config['max_steps'])
     while True:    
         # Pick action
         action = select_action(config, state, policy_net, steps, device)

@@ -43,6 +43,12 @@ best_parameters, values, experiment, model = optimize(
             'bounds' : [2,12],
         },
         {
+            'name' : 'learning_rate',
+            'type' : 'choice',
+            'values' : [1 * 10 ** -x for x in list(range(3,7))], # [0.001, 0.0001, 1e-05, 1e-06]
+            'is_ordered' : True,
+        },
+        {
             'name' : 'conv_filter_size',
             'type' : 'choice',
             'values' : [2 ** x for x in range(6,10)], # [64, 128, 256, 512]
@@ -57,7 +63,7 @@ best_parameters, values, experiment, model = optimize(
         {
             'name' : 'neutral_cost',
             'type' : 'choice',
-            'values' : [-2 ** x for x in range(13,5,-2)], # [-8192, -2048, -512, -128]
+            'values' : [-2 ** x for x in range(8,0,-2)] + [0], # [-256, -64, -16, -4, 0]
             'is_ordered' : True,
         },
         {
@@ -85,7 +91,7 @@ best_parameters, values, experiment, model = optimize(
         },
     ],
     evaluation_function = forex_eval,
-    objective_name = 'mean',
+    objective_name = 'sum',
     total_trials = 20,
     parameter_constraints=["n_dense_layers + n_conv_layers <= 16"],
 )

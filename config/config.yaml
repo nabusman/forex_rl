@@ -14,7 +14,7 @@ stopping_metric:
 aggregation: 30 min
 n_samples: 100
 fx_pair: EURUSD
-stop_loss: 50
+stop_loss: 120
 neutral_cost: -100
 tech_indicators:
   macd: [12,26]
@@ -46,15 +46,17 @@ memory: 1000
 start_memory: 100
 learning_rate: 0.001
 dense_params:
-  - {out_features : 2048}
-  - {out_features : 2048}
-  - {out_features : 2048}
-  - {out_features : 2048}
-  - {out_features : 2048}
-  - {out_features : 2048}
-  - {out_features : 2048}
-  - {out_features : 2048}
+  - {out_features : 1024}
+  - {out_features : 1024}
+  - {out_features : 1024}
+  - {out_features : 1024}
+  - {out_features : 1024}
+  - {out_features : 1024}
+  - {out_features : 1024}
+  - {out_features : 1024}
 conv_params:
-  - {out_channels : 512, kernel_size: 5}
-  - {out_channels : 256, kernel_size: 2}
-  - {out_channels : 128, kernel_size: 1}
+  - {out_channels : 64, kernel_size: 2}
+  - {out_channels : 64, kernel_size: 2}
+  - {out_channels : 64, kernel_size: 2}
+  - {out_channels : 64, kernel_size: 2}
+  - {out_channels : 64, kernel_size: 2}

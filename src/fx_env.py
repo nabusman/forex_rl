@@ -94,6 +94,7 @@ class ForexEnv(gym.Env):
 
     def step(self, action):
         reward = 0 if self.is_test else self.neutral_cost
+        net_pips = None
         self.position = self.actions[action]
         self.start_index = np.searchsorted(self.tick_data[:,0], self.end_time)
         if self.position == 'long':
@@ -106,7 +107,7 @@ class ForexEnv(gym.Env):
             raw_exit_price = self._calc_exit_price()
             self.exit_price = raw_exit_price + (self.pip_size * self.max_slippage * np.random.random())
             net_pips = (self.enter_price - self.exit_price) / self.pip_size
-        reward = net_pips * self.dollars_per_pip
+        reward = net_pips * self.dollars_per_pip if net_pips is not None else reward
         scaled_reward = reward / self.max_reward
         scaled_reward = 1.0 if scaled_reward > 1 else scaled_reward
         scaled_reward = -1.0 if scaled_reward < -1 else scaled_reward

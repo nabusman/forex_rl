@@ -11,7 +11,7 @@ stopping_metric:
   threshold: 2.0
 
 # Environment parameters
-aggregation: 30 min
+aggregation: 15 min
 n_samples: 100
 fx_pair: EURUSD
 stop_loss: 120
@@ -45,6 +45,7 @@ pip_size:
 memory: 1000
 start_memory: 100
 learning_rate: 0.001
+clip_gradients: True
 dense_params:
   - {out_features : 1024}
   - {out_features : 1024}

@@ -56,14 +56,14 @@ def calc_metrics(rewards, info, risk_free_rate = 0.05):
     median_reward = np.median(rewards)
     mean_returns = np.mean(rewards / info['starting_balance'] - risk_free_rate)
     sharpe = mean_returns / std if std != 0 else 0
-    downside_deviation = np.std(rewards[np.argwhere(rewards < 0)] ** 2)
-    downside_deviation = 0 if np.isnan(downside_deviation) else downside_deviation
+    downside_deviation = np.std(rewards[np.argwhere(rewards < 0)] ** 2) \
+        if len(np.argwhere(rewards < 0)) != 0 else 0
     sortino = (roi - risk_free_rate) / downside_deviation if downside_deviation != 0 else 0
     metrics = {
         'sharpe' : float(sharpe), 
         'sortino' : float(sortino), 
         'mean' : float(mean_reward), 
-        'sum' : float(sum_reward), 
+        'total' : float(sum_reward), 
         'median' : float(median_reward),
         'downside_deviation' : float(downside_deviation),
         'standard_deviation' : float(std),
@@ -181,6 +181,9 @@ def train(device, writer, config, data_dir, **args):
         # optimizer step
         optimizer.zero_grad()
         loss.backward()
+        if config['clip_gradients']:
+            for param in policy_net.parameters():
+                param.grad.data.clamp_(-1, 1)
         optimizer.step()
         # Calc metrics, if above a level quit training
         rewards = np.array([x['reward'] for x in transitions if x['reward'] is not None])
@@ -202,10 +205,10 @@ def train(device, writer, config, data_dir, **args):
             and metrics[config['stopping_metric']['type']] is not np.inf:
             to_break = True
         if to_break:
+            pbar.close()
             print(f'Solved in {steps} steps with metrics: {metrics}')
             target_net.load_state_dict(policy_net.state_dict())
             break
-    pbar.close()
     return target_net
 
 

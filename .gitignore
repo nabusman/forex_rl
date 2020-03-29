@@ -3,3 +3,4 @@ events.out.tfevents*
 .vscode*
 *.pt
 *.pkl
+.ipynb*

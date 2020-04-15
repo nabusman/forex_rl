@@ -37,29 +37,29 @@ def forex_eval(params):
 
 best_parameters, values, experiment, model = optimize(
     parameters = [
-        # {
-        #     'name' : 'n_conv_layers',
-        #     'type' : 'range',
-        #     'bounds' : [2,12],
-        # },
+        {
+            'name' : 'n_conv_layers',
+            'type' : 'range',
+            'bounds' : [2,12],
+        },
         {
             'name' : 'learning_rate',
             'type' : 'choice',
             'values' : [1 * 10 ** -x for x in list(range(2,4))], # [0.01, 0.001]
             'is_ordered' : True,
         },
-        # {
-        #     'name' : 'conv_filter_size',
-        #     'type' : 'choice',
-        #     'values' : [2 ** x for x in range(6,10)], # [64, 128, 256, 512]
-        #     'is_ordered' : True,
-        # },
-        # {
-        #     'name' : 'conv_kernel_size',
-        #     'type' : 'choice',
-        #     'values' : list(range(1,6)), # [1, 2, 3, 4, 5]
-        #     'is_ordered' : True,
-        # },
+        {
+            'name' : 'conv_filter_size',
+            'type' : 'choice',
+            'values' : [2 ** x for x in range(6,10)], # [64, 128, 256, 512]
+            'is_ordered' : True,
+        },
+        {
+            'name' : 'conv_kernel_size',
+            'type' : 'choice',
+            'values' : list(range(1,6)), # [1, 2, 3, 4, 5]
+            'is_ordered' : True,
+        },
         {
             'name' : 'target_update',
             'type' : 'choice',
@@ -78,23 +78,23 @@ best_parameters, values, experiment, model = optimize(
             'values' : list(range(50,200, 50)), # [50, 100, 150]
             'is_ordered' : True,
         },
-        # {
-        #     'name' : 'aggregation',
-        #     'type' : 'choice',
-        #     'values' : ['1 min', '5 min', '15 min', '30 min', '1 hour'],
-        #     'is_ordered' : True,
-        # },
-        # {
-        #     'name' : 'n_dense_layers',
-        #     'type' : 'range',
-        #     'bounds' : [2,12],
-        # },
-        # {
-        #     'name' : 'n_nodes_dense_layers',
-        #     'type' : 'choice',
-        #     'values' : [2 ** x for x in range(9,13)], # [512, 1024, 2048, 4096]
-        #     'is_ordered' : True,
-        # },
+        {
+            'name' : 'aggregation',
+            'type' : 'choice',
+            'values' : ['1 min', '5 min', '15 min', '30 min', '1 hour'],
+            'is_ordered' : True,
+        },
+        {
+            'name' : 'n_dense_layers',
+            'type' : 'range',
+            'bounds' : [2,12],
+        },
+        {
+            'name' : 'n_nodes_dense_layers',
+            'type' : 'choice',
+            'values' : [2 ** x for x in range(9,13)], # [512, 1024, 2048, 4096]
+            'is_ordered' : True,
+        },
     ],
     evaluation_function = forex_eval,
     objective_name = 'total',

@@ -99,12 +99,26 @@ class ForexEnv(gym.Env):
         self.start_index = np.searchsorted(self.tick_data[:,0], self.end_time)
         if self.position == 'long':
             self.enter_price = self.tick_data[self.start_index,2]
-            raw_exit_price = self._calc_exit_price()
+            raw_exit_price = helpers.calc_exit_price(
+                tick_data = self.tick_data, 
+                start_index = self.start_index, 
+                position = self.position, 
+                stop_loss = self.stop_loss, 
+                pip_size = self.pip_size, 
+                enter_price = self.enter_price,
+            )
             self.exit_price = raw_exit_price - (self.pip_size * self.max_slippage * np.random.random())
             net_pips = (self.exit_price - self.enter_price) / self.pip_size
         elif self.position == 'short':
             self.enter_price = self.tick_data[self.start_index,1]
-            raw_exit_price = self._calc_exit_price()
+            raw_exit_price = helpers.calc_exit_price(
+                tick_data = self.tick_data, 
+                start_index = self.start_index, 
+                position = self.position, 
+                stop_loss = self.stop_loss, 
+                pip_size = self.pip_size, 
+                enter_price = self.enter_price,
+            )
             self.exit_price = raw_exit_price + (self.pip_size * self.max_slippage * np.random.random())
             net_pips = (self.enter_price - self.exit_price) / self.pip_size
         reward = net_pips * self.dollars_per_pip if net_pips is not None else reward
@@ -123,7 +137,7 @@ class ForexEnv(gym.Env):
 
 
     def _get_observation(self):
-        # Get random index number between 0 and len of data minus n_samples
+        # Get random index number between 0 and len of data minus 2X n_samples
         i = np.random.randint(0, self.data.shape[0] - (2 * self.n_samples))
         obs = self.data[i : i + self.n_samples, 1:].T.copy()
         end_time = self.data[i + self.n_samples, 0]
@@ -142,28 +156,3 @@ class ForexEnv(gym.Env):
         self.np_random, seed1 = seeding.np_random(seed)
         seed2 = seeding.hash_seed(seed1 + 1) % 2 ** 31
         return [seed1, seed2]
-
-    def _calc_exit_price(self):
-        if self.position == 'long':
-            max_price = self.enter_price
-        elif self.position == 'short':
-            min_price = self.enter_price
-        else:
-            raise Exception(f'Unknown self.position {self.position}')
-        stop_loss_amount = self.stop_loss * self.pip_size
-        for i in range(self.start_index,self.tick_data.shape[0]):
-            _, bid, ask = self.tick_data[i,:]
-            if self.position == 'long':
-                stop_loss = max_price - stop_loss_amount
-                if max_price < bid:
-                    max_price = bid
-                    continue
-                elif bid <= stop_loss or i == (self.tick_data.shape[0] - 1):
-                    return bid
-            elif self.position == 'short':
-                stop_loss = min_price + stop_loss_amount
-                if min_price > ask:
-                    min_price = ask
-                    continue
-                elif ask >= stop_loss or i == (self.tick_data.shape[0] - 1):
-                    return ask

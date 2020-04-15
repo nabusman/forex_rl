@@ -4,18 +4,18 @@ gamma: 0.999
 eps_start: 0.9
 eps_end: 0.05
 eps_decay: 200
-target_update: 100
-max_steps: 5000
-stopping_metric:
-  type: sortino
-  threshold: 2.0
+target_update: 256
+max_steps: 100000
+# stopping_metric:
+#   type: sortino
+#   threshold: 2.0
 
 # Environment parameters
 aggregation: 15 min
-n_samples: 100
+n_samples: 500
 fx_pair: EURUSD
-stop_loss: 120
-neutral_cost: -100
+stop_loss: 100
+neutral_cost: -1000
 tech_indicators:
   macd: [12,26]
   rsi: [14]
@@ -51,13 +51,10 @@ dense_params:
   - {out_features : 1024}
   - {out_features : 1024}
   - {out_features : 1024}
-  - {out_features : 1024}
-  - {out_features : 1024}
-  - {out_features : 1024}
-  - {out_features : 1024}
+  - {out_features : 1024, dropout : 0.5}
+  - {out_features : 1024, dropout : 0.5}
 conv_params:
-  - {out_channels : 64, kernel_size: 2}
-  - {out_channels : 64, kernel_size: 2}
-  - {out_channels : 64, kernel_size: 2}
-  - {out_channels : 64, kernel_size: 2}
-  - {out_channels : 64, kernel_size: 2}
+  - {out_channels : 256, kernel_size: 2}
+  - {out_channels : 256, kernel_size: 2}
+  - {out_channels : 256, kernel_size: 2}
+  - {out_channels : 256, kernel_size: 2}

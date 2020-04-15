@@ -4,6 +4,7 @@ import yaml
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from numba import jit
 
 import indicators
 
@@ -75,3 +76,33 @@ def get_fx_file_paths(fx_pair, agg_level, agg_magnitude, tech_indicators, data_d
         np.save(file_paths[phase], fx_npy[phase])
     file_path = file_paths['test'] if is_test else file_paths['train']
     return file_path
+
+@jit(nopython = True)
+def calc_exit_price(tick_data, start_index, position, stop_loss, pip_size, enter_price):
+    stop_loss_amount = stop_loss * pip_size
+    if position == 'long':
+        max_price = enter_price
+        for i in range(start_index,tick_data.shape[0]):
+            _, bid, ask = tick_data[i,:]
+            stop_loss_price = max_price - stop_loss_amount
+            if max_price < bid:
+                max_price = bid
+                continue
+            elif bid <= stop_loss_price:
+                return stop_loss_price
+            elif i == (tick_data.shape[0] - 1):
+                return bid
+    elif position == 'short':
+        min_price = enter_price
+        for i in range(start_index,tick_data.shape[0]):
+            _, bid, ask = tick_data[i,:]
+            stop_loss_price = min_price + stop_loss_amount
+            if min_price > ask:
+                min_price = ask
+                continue
+            elif ask >= stop_loss_price:
+                return stop_loss_price
+            elif i == (tick_data.shape[0] - 1):
+                return ask
+    else:
+        return np.nan

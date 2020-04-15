@@ -153,10 +153,9 @@ def train(device, writer, config, data_dir, **args):
     steps = 0
     cum_rewards = 0
     state = env.reset()
+    print(target_net)
 
     # Training Loop
-    print(policy_net)
-    print('Starting training...')
     pbar = tqdm(total = config['max_steps'])
     while True:    
         # Pick action
@@ -201,12 +200,11 @@ def train(device, writer, config, data_dir, **args):
         to_break = False
         if steps == config['max_steps']:
             to_break = True
-        elif metrics[config['stopping_metric']['type']] >= config['stopping_metric']['threshold'] \
-            and metrics[config['stopping_metric']['type']] is not np.inf:
-            to_break = True
+        # elif metrics[config['stopping_metric']['type']] >= config['stopping_metric']['threshold'] \
+        #     and metrics[config['stopping_metric']['type']] is not np.inf:
+        #     to_break = True
         if to_break:
             pbar.close()
-            print(f'Solved in {steps} steps with metrics: {metrics}')
             target_net.load_state_dict(policy_net.state_dict())
             break
     return target_net

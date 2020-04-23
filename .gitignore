@@ -4,3 +4,4 @@ events.out.tfevents*
 *.pt
 *.pkl
 .ipynb*
+*.key
